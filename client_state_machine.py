@@ -4,6 +4,7 @@ Created on Sun Apr  5 00:00:32 2015
 @author: zhengzhang
 """
 from chat_utils import *
+import TicTacToe as ttt
 import json
 
 class ClientSM:
@@ -13,6 +14,8 @@ class ClientSM:
         self.me = ''
         self.out_msg = ''
         self.s = s
+        self.letter = ''
+        self.theBoard = [' '] * 10
 
     def set_state(self, state):
         self.state = state
@@ -118,6 +121,7 @@ class ClientSM:
 
 #==============================================================================
 # Start chatting, 'bye' for quit
+# 'game' for starting Tic Tac Toe
 # This is event handling instate "S_CHATTING"
 #==============================================================================
         elif self.state == S_CHATTING:
@@ -127,12 +131,17 @@ class ClientSM:
                     self.disconnect()
                     self.state = S_LOGGEDIN
                     self.peer = ''
+                elif my_msg == 'game':
+                    self.state = S_GAMING
+
             if len(peer_msg) > 0:    # peer's stuff, coming in
                 peer_msg = json.loads(peer_msg)
                 if peer_msg["action"] == "connect":
                     self.out_msg += "(" + peer_msg["from"] + " joined)\n"
                 elif peer_msg["action"] == "disconnect":
                     self.state = S_LOGGEDIN
+                elif peer_msg["action"] == "game":
+                    self.state = S_GAMING
                 else:
                     self.out_msg += peer_msg["from"] + peer_msg["message"]
 
@@ -140,6 +149,39 @@ class ClientSM:
             # Display the menu again
             if self.state == S_LOGGEDIN:
                 self.out_msg += menu
+
+            if self.state == S_GAMING:
+                turn = ttt.whoGoesFirst(self.me, self.peer)
+                if turn == self.me:
+                    self.letter = 'X'
+                    self.out_msg += "You go first.\n"
+                    self.out_msg += "You are " + self.letter + "\n"
+                    self.out_msg += ttt.drawBoard(self.theBoard)
+                    self.out_msg += "What is your move? (1-9)\n"
+                else:
+                    self.out_msg += self.peer + " goes first."
+                    mysend(self.s, json.dumps({"action":"gamestart", "with": self.peer, "board": self.theBoard, "message": "You go first."}))
+#==============================================================================
+# gaming state
+#==============================================================================
+        elif self.state == S_GAMING:
+            if len(my_msg) > 0:
+                if my_msg in '1 2 3 4 5 6 7 8 9'.split() and ttt.isSpaceFree(self.theBoard, int(my_msg)):
+                    move = int(my_msg)
+                    ttt.makeMove(self.theBoard, self.letter, move)
+                else:
+                    self.out_msg += "What is your move? (1-9)\n"
+                mysend(self.s, json.dumps({"action":"game", "with": self.peer, "board": self.theBoard}))
+
+            if len(peer_msg) > 0:    # peer's stuff, coming in
+                peer_msg = json.loads(peer_msg)
+                if peer_msg["action"] == "gamestart":
+                    self.letter = "X"
+                    self.out_msg += peer_msg["message"]
+                self.theBoard = peer_msg["board"]
+                self.out_msg += "You are " + self.letter + "\n"
+                self.out_msg += ttt.drawBoard(self.theBoard)
+                self.out_msg += "What is your move? (1-9)\n"
 #==============================================================================
 # invalid state
 #==============================================================================

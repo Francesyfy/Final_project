@@ -127,6 +127,15 @@ class Server:
                     self.indices[g].add_msg_and_index(said2)
                     mysend(to_sock, json.dumps({"action":"exchange", "from":msg["from"], "message":msg["message"]}))
 #==============================================================================
+#                 online gaming
+#==============================================================================
+            elif msg["action"] == "gamestart":
+                to_sock = self.logged_name2sock[msg["with"]]
+                mysend(to_sock, json.dumps({"action":"gamestart", "board": msg["board"], "message": msg["message"]}))
+            elif msg["action"] == "game":
+                to_sock = self.logged_name2sock[msg["with"]]
+                mysend(to_sock, json.dumps({"action":"game", "board": msg["board"]}))
+#==============================================================================
 #                 listing available peers
 #==============================================================================
             elif msg["action"] == "list":
