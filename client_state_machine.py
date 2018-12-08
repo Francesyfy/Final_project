@@ -37,8 +37,6 @@ class ClientSM:
             self.peer = peer
             self.out_msg += 'You are connected with '+ self.peer + '\n'
             return (True)
-        elif response["status"] == "busy":
-            self.out_msg += 'User is busy. Please try again later\n'
         elif response["status"] == "self":
             self.out_msg += 'Cannot talk to yourself (sick)\n'
         else:
@@ -50,6 +48,29 @@ class ClientSM:
         mysend(self.s, msg)
         self.out_msg += 'You are disconnected from ' + self.peer + '\n'
         self.peer = ''
+
+    def start_game(self, peer):
+        msg = json.dumps({"action":"startgame", "target":peer})
+        mysend(self.s, msg)
+        response = json.loads(myrecv(self.s))
+        if response["status"] == "success":
+            self.peer = peer
+            self.out_msg += 'You are connected with '+ self.peer + '\n'
+            self.out_msg += 'Play Tic Tac Toe with ' + peer + '. Game start!\n\n'
+            self.out_msg += '-----------------------------------\n'
+            self.out_msg += 'You are ' + self.letter + '.\n'
+            if response["turn"] == self.peer:
+                self.out_msg += self.peer + ' goes first.'
+            else:
+                self.out_msg += 'You go first.'
+            return (True)
+        elif response["status"] == "chatting":
+            self.out_msg += 'User is chatting with someone else. Please try again later\n'
+        elif response["status"] == "self":
+            self.out_msg += 'Cannot play game with yourself\n'
+        else:
+            self.out_msg += 'User is not online, try again later\n'
+        return(False)
 
     def proc(self, my_msg, peer_msg):
         self.out_msg = ''
@@ -106,6 +127,16 @@ class ClientSM:
                     else:
                         self.out_msg += 'Sonnet ' + poem_idx + ' not found\n\n'
 
+                elif my_msg[0] == 'g':
+                    peer = my_msg[1:]
+                    peer = peer.strip()
+                    #assign letter to each player
+                    self.letter = 'X'
+                    if self.start_game(peer) == True:
+                        self.state = S_GAMING
+                    else:
+                        self.out_msg += 'Connection unsuccessful\n'
+
                 else:
                     self.out_msg += menu
 
@@ -119,9 +150,21 @@ class ClientSM:
                     self.out_msg += '------------------------------------\n'
                     self.state = S_CHATTING
 
+                elif peer_msg["action"] == "startgame":
+                    self.peer = peer_msg["from"]
+                    self.letter = 'O'
+                    self.out_msg += 'Request from ' + self.peer + '\n'
+                    self.out_msg += 'Play Tic Tac Toe with ' + self.peer
+                    self.out_msg += '. Game start!\n\n'
+                    self.out_msg += '------------------------------------\n'
+                    self.out_msg += 'You are ' + self.letter + '.\n'
+                    if peer_msg["turn"] == self.peer:
+                        self.out_msg += self.peer + ' goes first.'
+                    else:
+                        self.out_msg += 'You go first.'
+                    self.state = S_GAMING
 #==============================================================================
 # Start chatting, 'bye' for quit
-# 'game' for starting Tic Tac Toe
 # This is event handling instate "S_CHATTING"
 #==============================================================================
         elif self.state == S_CHATTING:
@@ -131,8 +174,6 @@ class ClientSM:
                     self.disconnect()
                     self.state = S_LOGGEDIN
                     self.peer = ''
-                elif my_msg == 'game':
-                    self.state = S_GAMING
 
             if len(peer_msg) > 0:    # peer's stuff, coming in
                 peer_msg = json.loads(peer_msg)
@@ -140,8 +181,6 @@ class ClientSM:
                     self.out_msg += "(" + peer_msg["from"] + " joined)\n"
                 elif peer_msg["action"] == "disconnect":
                     self.state = S_LOGGEDIN
-                elif peer_msg["action"] == "game":
-                    self.state = S_GAMING
                 else:
                     self.out_msg += peer_msg["from"] + peer_msg["message"]
 
@@ -150,21 +189,10 @@ class ClientSM:
             if self.state == S_LOGGEDIN:
                 self.out_msg += menu
 
-            if self.state == S_GAMING:
-                turn = ttt.whoGoesFirst(self.me, self.peer)
-                if turn == self.me:
-                    self.letter = 'X'
-                    self.out_msg += "You go first.\n"
-                    self.out_msg += "You are " + self.letter + "\n"
-                    self.out_msg += ttt.drawBoard(self.theBoard)
-                    self.out_msg += "What is your move? (1-9)\n"
-                else:
-                    self.out_msg += self.peer + " goes first."
-                    mysend(self.s, json.dumps({"action":"gamestart", "with": self.peer, "board": self.theBoard, "message": "You go first."}))
 #==============================================================================
 # gaming state
 #==============================================================================
-        elif self.state == S_GAMING:
+        elif self.state == S_GAMING:  
             if len(my_msg) > 0:
                 if my_msg in '1 2 3 4 5 6 7 8 9'.split() and ttt.isSpaceFree(self.theBoard, int(my_msg)):
                     move = int(my_msg)
@@ -175,7 +203,7 @@ class ClientSM:
 
             if len(peer_msg) > 0:    # peer's stuff, coming in
                 peer_msg = json.loads(peer_msg)
-                if peer_msg["action"] == "gamestart":
+                if peer_msg["action"] == "startgame":
                     self.letter = "X"
                     self.out_msg += peer_msg["message"]
                 self.theBoard = peer_msg["board"]

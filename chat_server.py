@@ -13,6 +13,7 @@ import indexer
 import json
 import pickle as pkl
 from chat_utils import *
+import TicTacToe as ttt
 import chat_group as grp
 
 class Server:
@@ -129,12 +130,26 @@ class Server:
 #==============================================================================
 #                 online gaming
 #==============================================================================
-            elif msg["action"] == "gamestart":
-                to_sock = self.logged_name2sock[msg["with"]]
-                mysend(to_sock, json.dumps({"action":"gamestart", "board": msg["board"], "message": msg["message"]}))
-            elif msg["action"] == "game":
-                to_sock = self.logged_name2sock[msg["with"]]
-                mysend(to_sock, json.dumps({"action":"game", "board": msg["board"]}))
+            elif msg["action"] == "startgame":
+                to_name = msg["target"]
+                from_name = self.logged_sock2name[from_sock]
+                if to_name == from_name:
+                    msg = json.dumps({"action":"startgame", "status":"self"})
+                elif self.group.is_member(to_name):
+                    #if the peer is chatting
+                    if self.group.members[to_name] == 1:
+                        msg = json.dumps({"action":"startgame", "status":"chatting"})
+                    # connect to the peer
+                    else:
+                        #randomly choose who goes first
+                        turn = ttt.whoGoesFirst(from_name, to_name)
+                        to_sock = self.logged_name2sock[to_name]
+                        self.group.connect(from_name, to_name)
+                        msg = json.dumps({"action":"startgame", "status":"success", "turn":turn})
+                        mysend(to_sock, json.dumps({"action":"startgame", "status":"request", "turn":turn, "from":from_name}))
+                else:
+                    msg = json.dumps({"action":"startgame", "status":"no-user"})
+                mysend(from_sock, msg)
 #==============================================================================
 #                 listing available peers
 #==============================================================================
