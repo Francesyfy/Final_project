@@ -150,6 +150,10 @@ class Server:
                 else:
                     msg = json.dumps({"action":"startgame", "status":"no-user"})
                 mysend(from_sock, msg)
+
+            elif msg["action"] == "game":
+                 to_sock = self.logged_name2sock[msg["from"]]
+                 mysend(to_sock, json.dumps({"action":"game", "board": msg["board"]}))
 #==============================================================================
 #                 listing available peers
 #==============================================================================

@@ -60,9 +60,10 @@ class ClientSM:
             self.out_msg += '-----------------------------------\n'
             self.out_msg += 'You are ' + self.letter + '.\n'
             if response["turn"] == self.peer:
-                self.out_msg += self.peer + ' goes first.'
+                self.out_msg += self.peer + ' goes first.\n'
             else:
-                self.out_msg += 'You go first.'
+                self.out_msg += 'You go first.\n'
+            self.out_msg += ttt.drawBoard(self.theBoard)
             return (True)
         elif response["status"] == "chatting":
             self.out_msg += 'User is chatting with someone else. Please try again later\n'
@@ -159,9 +160,10 @@ class ClientSM:
                     self.out_msg += '------------------------------------\n'
                     self.out_msg += 'You are ' + self.letter + '.\n'
                     if peer_msg["turn"] == self.peer:
-                        self.out_msg += self.peer + ' goes first.'
+                        self.out_msg += self.peer + ' goes first.\n'
                     else:
-                        self.out_msg += 'You go first.'
+                        self.out_msg += 'You go first.\n'
+                    self.out_msg += ttt.drawBoard(self.theBoard)
                     self.state = S_GAMING
 #==============================================================================
 # Start chatting, 'bye' for quit
@@ -193,19 +195,17 @@ class ClientSM:
 # gaming state
 #==============================================================================
         elif self.state == S_GAMING:  
-            if len(my_msg) > 0:
+            if len(my_msg) > 0:   #make move
                 if my_msg in '1 2 3 4 5 6 7 8 9'.split() and ttt.isSpaceFree(self.theBoard, int(my_msg)):
                     move = int(my_msg)
                     ttt.makeMove(self.theBoard, self.letter, move)
+                    self.out_msg += ttt.drawBoard(self.theBoard)
                 else:
                     self.out_msg += "What is your move? (1-9)\n"
-                mysend(self.s, json.dumps({"action":"game", "with": self.peer, "board": self.theBoard}))
+                mysend(self.s, json.dumps({"action":"game", "from": self.peer, "board": self.theBoard}))
 
-            if len(peer_msg) > 0:    # peer's stuff, coming in
+            if len(peer_msg) > 0:  #receive and print the updated board
                 peer_msg = json.loads(peer_msg)
-                if peer_msg["action"] == "startgame":
-                    self.letter = "X"
-                    self.out_msg += peer_msg["message"]
                 self.theBoard = peer_msg["board"]
                 self.out_msg += "You are " + self.letter + "\n"
                 self.out_msg += ttt.drawBoard(self.theBoard)
