@@ -154,6 +154,14 @@ class Server:
             elif msg["action"] == "game":
                  to_sock = self.logged_name2sock[msg["from"]]
                  mysend(to_sock, json.dumps({"action":"game", "board": msg["board"]}))
+
+            elif msg["action"] == "endgame":
+                 to_sock = self.logged_name2sock[msg["from"]]
+                 mysend(to_sock, json.dumps({"action":"endgame", "result": msg["result"], "board": msg["board"]}))
+
+            elif msg["action"] == "quitgame":
+                from_name = self.logged_sock2name[from_sock]
+                self.group.disconnect(from_name)
 #==============================================================================
 #                 listing available peers
 #==============================================================================

@@ -73,6 +73,11 @@ class ClientSM:
             self.out_msg += 'User is not online, try again later\n'
         return(False)
 
+    def quit_game(self):
+        msg = json.dumps({"action":"quitgame"})
+        mysend(self.s, msg)
+        self.peer = ''
+
     def proc(self, my_msg, peer_msg):
         self.out_msg = ''
 #==============================================================================
@@ -202,14 +207,47 @@ class ClientSM:
                     self.out_msg += ttt.drawBoard(self.theBoard)
                 else:
                     self.out_msg += "What is your move? (1-9)\n"
-                mysend(self.s, json.dumps({"action":"game", "from": self.peer, "board": self.theBoard}))
+                #check if game ends
+                #someone wins the game
+                if ttt.isWinner(self.theBoard, self.letter):
+                    self.out_msg += 'You have won the game!'
+                    mysend(self.s, json.dumps({"action":"endgame", "result":"lose", "from": self.peer, "board": self.theBoard}))
+                    self.quit_game()
+                    self.theBoard = [' '] * 10
+                    self.state = S_LOGGEDIN
+                else:
+                    #if the game is a tie
+                    if ttt.isBoardFull(self.theBoard):
+                        self.out_msg += 'The game is a tie!'
+                        mysend(self.s, json.dumps({"action":"endgame", "result":"tie", "from": self.peer, "board": self.theBoard}))
+                        self.quit_game()
+                        self.theBoard = [' '] * 10
+                        self.state = S_LOGGEDIN
+                    #game continues
+                    else:
+                        mysend(self.s, json.dumps({"action":"game", "from": self.peer, "board": self.theBoard}))
 
-            if len(peer_msg) > 0:  #receive and print the updated board
+            if len(peer_msg) > 0:
                 peer_msg = json.loads(peer_msg)
+                #receive and print the updated board
                 self.theBoard = peer_msg["board"]
-                self.out_msg += "You are " + self.letter + "\n"
-                self.out_msg += ttt.drawBoard(self.theBoard)
-                self.out_msg += "What is your move? (1-9)\n"
+                #game result
+                if peer_msg["action"] == "endgame":
+                    if peer_msg["result"] == "lose":
+                        self.out_msg += 'Oops, you lost the game.'
+                    elif peer_msg["result"] == "tie":
+                        self.out_msg += 'The game is a tie!'
+                    self.theBoard = [' '] * 10
+                    self.state = S_LOGGEDIN
+                #game continues
+                else:
+                    self.out_msg += "You are " + self.letter + "\n"
+                    self.out_msg += ttt.drawBoard(self.theBoard)
+                    self.out_msg += "What is your move? (1-9)\n"
+
+            # Display the menu again
+            if self.state == S_LOGGEDIN:
+                self.out_msg += menu
 #==============================================================================
 # invalid state
 #==============================================================================
