@@ -4,17 +4,17 @@ import random
 def drawBoard(board):
     # This function draws the board that it was passed.
     # "board" is a list of 10 strings representing the board (ignore index 0)
-    theBoard = '   |   |\n' +\
-    ' ' + board[7] + ' | ' + board[8] + ' | ' + board[9] + '\n' +\
-    '   |   |\n' +\
-    '-----------\n' +\
-    '   |   |\n' +\
-    ' ' + board[4] + ' | ' + board[5] + ' | ' + board[6] + '\n' +\
-    '   |   |\n' +\
-    '-----------\n' +\
-    '   |   |\n' +\
-    ' ' + board[1] + ' | ' + board[2] + ' | ' + board[3] + '\n' +\
-    '   |   |\n' 
+    theBoard = '1    |2    |3\n' + '     |     |\n'\
+    '  ' + board[1] + '  |  ' + board[2] + '  |  ' + board[3] + '\n' +\
+    '     |     |\n' +\
+    '------------------\n' +\
+    '4    |5    |6\n' + '     |     |\n'\
+    '  ' + board[4] + '  |  ' + board[5] + '  |  ' + board[6] + '\n' +\
+    '     |     |\n' +\
+    '------------------\n' +\
+    '7    |8    |9\n' + '     |     |\n'\
+    '  ' + board[7] + '  |  ' + board[8] + '  |  ' + board[9] + '\n' +\
+    '     |     |\n' 
     return theBoard
 
 def whoGoesFirst(me, peer):

@@ -123,6 +123,7 @@ class Server:
                 #said = msg["from"]+msg["message"]
                 said2 = text_proc(msg["message"], from_name)
                 self.indices[from_name].add_msg_and_index(said2)
+                print(msg["message"])
                 for g in the_guys[1:]:
                     to_sock = self.logged_name2sock[g]
                     self.indices[g].add_msg_and_index(said2)

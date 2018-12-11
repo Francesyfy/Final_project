@@ -215,12 +215,12 @@ class ClientSM:
 
             if len(peer_msg) > 0:    # peer's stuff, coming in
                 peer_msg = json.loads(peer_msg)
-                peer_msg["message"] = AESCipher("2333").decrypt(peer_msg["message"])
                 if peer_msg["action"] == "connect":
                     self.out_msg += "(" + peer_msg["from"] + " joined)\n"
                 elif peer_msg["action"] == "disconnect":
                     self.state = S_LOGGEDIN
                 else:
+                    peer_msg["message"] = AESCipher("2333").decrypt(peer_msg["message"])
                     self.out_msg += peer_msg["from"] + peer_msg["message"]
 
 
